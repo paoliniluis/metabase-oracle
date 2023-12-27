@@ -10,14 +10,14 @@ setup = f'{host}:{port}/api/setup'
 database = f'{host}:{port}/api/database'
 login = f'{host}:{port}/api/session'
 
-oracle = {"is_on_demand":False,"is_full_sync":True,"is_sample":False,"cache_ttl":None,"refingerprint":False,"auto_run_queries":True,"schedules":{},"details":{"host":"oracle","port":1521,"sid":"FREE","service-name":None,"user":"METABASE","password":"Metasample123","ssl":False,"tunnel-enabled":False,"advanced-options":False},"name":"Oracle","engine":"oracle"}
-        
-app_db = {'engine':'postgres','name':'postgres-app-db','details':{'host':'postgres-app-db','port':'5432','dbname':'metabase','user':'metabase','password':'mysecretpassword','schema-filters-type':'all','ssl':False,'tunnel-enabled':False,'advanced-options':False},'is_full_sync':True}
+oracle_23 = {"is_on_demand":False ,"is_full_sync":True,"is_sample":False ,"cache_ttl":None ,"refingerprint":False ,"auto_run_queries":True,"schedules":{},"details":{"host":"oracle-23","port":1521,"sid":"FREE","service-name":None ,"user":"metabase","password":"Metasample123","ssl":False ,"tunnel-enabled":False ,"advanced-options":False },"name":"oracle-23","engine":"oracle"}
+oracle_18 = {"is_on_demand":False,"is_full_sync":True,"is_sample":False,"cache_ttl":None,"refingerprint":False,"auto_run_queries":True,"schedules":{},"details":{"host":"oracle-18","port":1521,"sid":"XE","service-name":None,"user":"metabase","password":"Metasample123","ssl":False,"tunnel-enabled":False,"advanced-options":False},"name":"oracle-18","engine":"oracle"}
+app_db = {'engine':'postgres','name':'postgres-app-db','details':{'host':'postgres-app-db','port':'5432','dbname':'metabase','user':'metabase','password':'mysecretpassword','schema-filters-type':'all','ssl':False ,'tunnel-enabled':False ,'advanced-options':False },'is_full_sync':True}
 
-dbs = [oracle, app_db]
+dbs = [oracle_23, oracle_18, app_db]
 
 def health():
-    response = requests.get(healthCheckEndpoint, verify=False)
+    response = requests.get(healthCheckEndpoint, verify=False )
     if response.json()['status'] == 'ok':
         return 'healthy'
     else:
@@ -26,15 +26,15 @@ def health():
 if health() == 'healthy' and os.environ.get('retry') == 'yes':
     loginPayload = { 'username': 'a@b.com', 'password': 'metabot1' }
     session = requests.Session()
-    sessionToken = session.post(login, verify=False, json=loginPayload)
+    sessionToken = session.post(login, verify=False , json=loginPayload)
     for i in range(int(os.environ.get('dbs'))):
         db = dbs[i]
-        session.post(database, verify=False, json=db)
+        session.post(database, verify=False , json=db)
     session.delete(f'{database}/1')
 
 if health() == 'healthy' and os.environ.get('retry') is None:
     session = requests.Session()
-    token = session.get(properties, verify=False).json()['setup-token']
+    token = session.get(properties, verify=False ).json()['setup-token']
     setupPayload = {
         'token':f'{token}',
         'user':{
@@ -50,15 +50,15 @@ if health() == 'healthy' and os.environ.get('retry') is None:
         'prefs':{
             'site_name':'metabot1',
             'site_locale':'en',
-            'allow_tracking':False
+            'allow_tracking':False 
         }
     }
     try:
-        sessionToken = session.post(setup, verify=False, json=setupPayload).json()['id']
+        sessionToken = session.post(setup, verify=False , json=setupPayload).json()['id']
 
         for i in range(int(os.environ.get('dbs'))):
             db = dbs[i]
-            session.post(database, verify=False, json=db)
+            session.post(database, verify=False , json=db)
         
         # delete the sample DB
         session.delete(f'{database}/1')

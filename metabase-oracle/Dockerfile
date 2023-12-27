@@ -1,8 +1,30 @@
-FROM metabase/metabase-enterprise:v1.47.3
+FROM eclipse-temurin:11-jre as runner
 
-ADD groupSetup.sh .
-RUN sh groupSetup.sh
+ENV FC_LANG en-US LC_CTYPE en_US.UTF-8
+ARG version
+
+WORKDIR /app/
+
+ADD ./run_metabase.sh .
+
+RUN apt-get update && \
+  apt-get upgrade -y && \
+  apt-get install -y ca-certificates ca-certificates-java fonts-noto && \
+  apt-get clean && \
+  curl https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem -o /usr/local/share/ca-certificates/rds-combined-ca-bundle.pem && \
+  curl https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem -o /usr/local/share/ca-certificates/DigiCertGlobalRootG2.crt.pem && \
+  update-ca-certificates && \
+  mkdir -p /plugins && chmod a+rwx /plugins && \
+  keytool -list -cacerts && \
+  curl https://downloads.metabase.com/enterprise/${version}/metabase.jar -o metabase.jar && \
+  chmod +x run_metabase.sh && \
+  chmod -R a+rwX /app/
 
 ADD https://download.oracle.com/otn-pub/otn_software/jdbc/217/ojdbc8.jar /plugins/oracle.metabase-driver.jar
+# RUN chown metabase:metabase /plugins/oracle.metabase-driver.jar
 
-RUN chown metabase:metabase /plugins/oracle.metabase-driver.jar
+# expose our default runtime port
+EXPOSE 3000
+
+# run it
+ENTRYPOINT ["/app/run_metabase.sh"]

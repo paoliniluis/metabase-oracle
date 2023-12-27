@@ -1,7 +1,11 @@
 version: '3.9'
 services:
   metabase-oracle:
-    build: metabase-oracle/.
+    build:
+      context: metabase-oracle/.
+      dockerfile: Dockerfile
+      args:
+        - version=v1.48.1
     container_name: metabase-oracle
     hostname: metabase
     volumes: 
@@ -26,7 +30,7 @@ services:
     depends_on: 
       postgres-app-db-oracle:
         condition: service_healthy
-      oracle:
+      oracle-23:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "while ! curl -s 'http://localhost:3000/api/health' | grep '{\"status\":\"ok\"}'; do sleep 1; done"]
@@ -75,14 +79,28 @@ services:
       host: http://metabase
       port: 3000
       dbs: 1
-  oracle:
+  oracle-23:
     image: gvenzl/oracle-free:23-slim
-    container_name: oracle
+    container_name: oracle-23
+    ports:
+      - 1522:1521
+    hostname: oracle-23
+    environment:
+      ORACLE_PASSWORD: Metasample123
+    networks: 
+      - metanet1-oracle
+    volumes:
+      - $PWD/oracle-init-script/sample_data.sql:/container-entrypoint-initdb.d/sample_data.sql
+    healthcheck:
+      test: ["CMD-SHELL", "healthcheck.sh"]
+  oracle-18:
+    image: gvenzl/oracle-xe:18-slim
+    container_name: oracle-18
     ports:
       - 1521:1521
-    hostname: oracle
+    hostname: oracle-18
     environment:
-      - ORACLE_PASSWORD=Metasample123
+      ORACLE_PASSWORD: Metasample123
     networks: 
       - metanet1-oracle
     volumes:
@@ -90,7 +108,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "healthcheck.sh"]
   maildev-sub-oracle:
-    image: maildev/maildev:1.1.0
+    image: maildev/maildev:2.1.0
     container_name: maildev-sub-oracle
     hostname: maildev-sub
     ports:
