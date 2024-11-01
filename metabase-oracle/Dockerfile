@@ -20,11 +20,11 @@ RUN apt-get update && \
   chmod +x run_metabase.sh && \
   chmod -R a+rwX /app/
 
-ADD https://download.oracle.com/otn-pub/otn_software/jdbc/217/ojdbc8.jar /plugins/oracle.metabase-driver.jar
+ADD https://download.oracle.com/otn-pub/otn_software/jdbc/235/ojdbc11.jar /plugins/oracle.metabase-driver.jar
 # RUN chown metabase:metabase /plugins/oracle.metabase-driver.jar
 
 # expose our default runtime port
 EXPOSE 3000
 
 # run it
-ENTRYPOINT ["/app/run_metabase.sh"]
+ENTRYPOINT ["java", "-jar", "metabase.jar"]

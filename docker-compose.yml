@@ -1,11 +1,10 @@
-version: '3.9'
 services:
   metabase-oracle:
     build:
       context: metabase-oracle/.
       dockerfile: Dockerfile
       args:
-        - version=v1.48.1
+        - version=v1.51.1
     container_name: metabase-oracle
     hostname: metabase
     volumes: 
@@ -13,18 +12,24 @@ services:
     ports:
       - 3000:3000
     environment: 
-      - "MB_DB_TYPE=postgres"
-      - "MB_DB_DBNAME=metabase"
-      - "MB_DB_PORT=5432"
-      - "MB_DB_USER=metabase"
-      - "MB_DB_PASS=mysecretpassword"
-      - "MB_DB_HOST=postgres-app-db"
-      - "MB_EMAIL_SMTP_HOST=maildev-sub"
-      - "MB_EMAIL_SMTP_PASSWORD=password"
-      - "MB_EMAIL_SMTP_PORT=25"
-      - "MB_EMAIL_SMTP_SECURITY=none"
-    cpus: 1
-    mem_limit: 2048m
+      - MB_DB_TYPE: postgres
+      - MB_DB_DBNAME: metabase
+      - MB_DB_PORT: 5432
+      - MB_DB_USER: metabase
+      - MB_DB_PASS: mysecretpassword
+      - MB_DB_HOST: postgres-app-db
+      - MB_EMAIL_SMTP_HOST: maildev-sub
+      - MB_EMAIL_SMTP_PASSWORD: password
+      - MB_EMAIL_SMTP_PORT: 25
+      - MB_EMAIL_SMTP_SECURITY: none
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2048M
+        reservations:
+          cpus: '2'
+          memory: 2048M
     networks: 
       - metanet1-oracle
     depends_on: 
@@ -35,7 +40,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "while ! curl -s 'http://localhost:3000/api/health' | grep '{\"status\":\"ok\"}'; do sleep 1; done"]
   postgres-app-db-oracle:
-    image: postgres:15.2-alpine
+    image: postgres:17-alpine
     container_name: postgres-app-db-oracle
     hostname: postgres-app-db
     ports:
@@ -48,8 +53,14 @@ services:
       - $PWD/postgres_origin:/var/lib/postgresql/data
     networks: 
       - metanet1-oracle
-    cpus: 1
-    mem_limit: 128m
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1024M
+        reservations:
+          cpus: '1'
+          memory: 1024M
     command: -c log_statement=all
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U metabase -d metabase"]
