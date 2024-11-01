@@ -1,27 +1,57 @@
 services:
+  nginx:
+    image: nginx:1.27-alpine-otel
+    hostname: nginx-border
+    container_name: nginx-oracle
+    volumes: 
+      - $PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - $PWD/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - $PWD/nginx/certs/:/etc/nginx/conf.d/certs/
+    networks:
+      - metanet1-oracle
+    ports:
+      - 8443:443
+      # - 8080:80
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 64M
+        reservations:
+          cpus: '0.5'
+          memory: 32M
+    depends_on:
+      metabase-oracle:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -O /dev/null http://localhost || exit 1"]
+      timeout: 10s
   metabase-oracle:
+    # image: metabase/metabase-enterprise:v1.50.31
     build:
-      context: metabase-oracle/.
+      context: metabase-oracle/
       dockerfile: Dockerfile
       args:
-        - version=v1.51.1
+        - version=v1.50.31
     container_name: metabase-oracle
     hostname: metabase
     volumes: 
     - /dev/urandom:/dev/random:ro
+    - $PWD/drivers:/plugins
     ports:
       - 3000:3000
     environment: 
-      - MB_DB_TYPE: postgres
-      - MB_DB_DBNAME: metabase
-      - MB_DB_PORT: 5432
-      - MB_DB_USER: metabase
-      - MB_DB_PASS: mysecretpassword
-      - MB_DB_HOST: postgres-app-db
-      - MB_EMAIL_SMTP_HOST: maildev-sub
-      - MB_EMAIL_SMTP_PASSWORD: password
-      - MB_EMAIL_SMTP_PORT: 25
-      - MB_EMAIL_SMTP_SECURITY: none
+      MB_DB_TYPE: postgres
+      MB_PLUGINS_DIR: /plugins
+      MB_DB_DBNAME: metabase
+      MB_DB_PORT: 5432
+      MB_DB_USER: metabase
+      MB_DB_PASS: mysecretpassword
+      MB_DB_HOST: postgres-app-db
+      MB_EMAIL_SMTP_HOST: maildev-sub
+      MB_EMAIL_SMTP_PASSWORD: password
+      MB_EMAIL_SMTP_PORT: 25
+      MB_EMAIL_SMTP_SECURITY: none
     deploy:
       resources:
         limits:
@@ -40,11 +70,11 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "while ! curl -s 'http://localhost:3000/api/health' | grep '{\"status\":\"ok\"}'; do sleep 1; done"]
   postgres-app-db-oracle:
-    image: postgres:17-alpine
+    image: postgres:16.2-alpine
     container_name: postgres-app-db-oracle
     hostname: postgres-app-db
-    ports:
-      - 5432:5432
+    # ports:
+    #   - 5432:5432
     environment:
       - "POSTGRES_USER=metabase"
       - "POSTGRES_DB=metabase"
@@ -53,14 +83,8 @@ services:
       - $PWD/postgres_origin:/var/lib/postgresql/data
     networks: 
       - metanet1-oracle
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1024M
-        reservations:
-          cpus: '1'
-          memory: 1024M
+    cpus: 1
+    mem_limit: 128m
     command: -c log_statement=all
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U metabase -d metabase"]
@@ -89,7 +113,7 @@ services:
     environment:
       host: http://metabase
       port: 3000
-      dbs: 1
+      dbs: 2
   oracle-23:
     image: gvenzl/oracle-free:23-slim
     container_name: oracle-23
@@ -122,8 +146,8 @@ services:
     image: maildev/maildev:2.1.0
     container_name: maildev-sub-oracle
     hostname: maildev-sub
-    ports:
-    - "3001:80"
+    # ports:
+    # - "3001:80"
     networks:
     - metanet1-oracle
     cpus: 1

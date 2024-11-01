@@ -5,8 +5,6 @@ ARG version
 
 WORKDIR /app/
 
-ADD ./run_metabase.sh .
-
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y ca-certificates ca-certificates-java fonts-noto && \
@@ -17,11 +15,7 @@ RUN apt-get update && \
   mkdir -p /plugins && chmod a+rwx /plugins && \
   keytool -list -cacerts && \
   curl https://downloads.metabase.com/enterprise/${version}/metabase.jar -o metabase.jar && \
-  chmod +x run_metabase.sh && \
   chmod -R a+rwX /app/
-
-ADD https://download.oracle.com/otn-pub/otn_software/jdbc/235/ojdbc11.jar /plugins/oracle.metabase-driver.jar
-# RUN chown metabase:metabase /plugins/oracle.metabase-driver.jar
 
 # expose our default runtime port
 EXPOSE 3000
